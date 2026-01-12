@@ -134,7 +134,7 @@ const UserController = {
         message: "Login successful",
         token,
         user: {
-          id: user.id,
+          id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,

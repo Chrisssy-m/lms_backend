@@ -3,15 +3,16 @@
 const pool = require("../connection");
 
 const CourseModel = {
-
+  
   create: async ({ title, description, author, price, thumbnail, lessons }) => {
+      debugger
     const query = `
       INSERT INTO courses (title, description, author, price, thumbnail, lessons)
       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
       RETURNING _id, title, description, author, price, thumbnail, lessons
     `;
 
-    const values = [title, description, author, price, thumbnail, lessons];
+    const values = [title, description, author, price, thumbnail, lessons ? JSON.stringify(lessons) : null];
     const { rows } = await pool.query(query, values);
     return rows[0];
   },
@@ -51,7 +52,18 @@ const CourseModel = {
 
   findById: async (id) => {
     const { rows } = await pool.query(
-      "SELECT _id, title, description, author, price, thumbnail, lessons FROM courses WHERE _id = $1",
+      `
+       SELECT 
+      c.*,
+      COALESCE(json_agg(l.*) FILTER (WHERE l._id IS NOT NULL), '[]') AS lessons_data
+    FROM courses c
+    LEFT JOIN lessons l
+      ON l._id = ANY (
+        SELECT jsonb_array_elements_text(c.lessons)::INT
+      )
+    WHERE c._id = $1
+    GROUP BY c._id;
+      `,
       [id]
     );
     return rows[0];

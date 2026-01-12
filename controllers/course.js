@@ -10,11 +10,13 @@ cloudinary.config({
   // upload_prefix: 'https://api-eu.cloudinary.com'
 });
 const CourseController = {
-
+  
   create: async (req, res) => {
+    
     try {
       const file = req.files.thumbnail;
       cloudinary.uploader.upload(file.tempFilePath, async (err, result) => {
+        
         fs.unlinkSync(file.tempFilePath);
         console.log('result', result);
         const { title, description, author, price, lessons } = req.body;
