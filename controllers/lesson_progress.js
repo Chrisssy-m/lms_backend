@@ -3,27 +3,22 @@ const Lesson_progressModel = require("../models/lesson_progress");
 
 
 const Lesson_progressController = {
-  
+
   create: async (req, res) => {
-    
+
     try {
-     
-        const { title, description, author, price, lessons } = req.body;
 
-        // create course
-        const course = await Lesson_progressModel.create({
-          title,
-          description,
-          author,
-          price,
-          thumbnail: '',
-          lessons:''
-        });
+      const { user_id, course_id, lesson_id } = req.body;
 
-        res.status(201).json({
-          message: "Course created successfully",
-          course
-        });
+      // create course
+      const lesson_progress = await Lesson_progressModel.create({
+        user_id, course_id, lesson_id
+      });
+
+      res.status(201).json({
+        message: "Lesson completed successfully",
+        lesson_progress
+      });
 
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -35,18 +30,18 @@ const Lesson_progressController = {
 
     try {
 
-      const file = req?.files?.thumbnail;
-     
-        const { _id, title, description, author, price, thumbnail, lessons } = req.body;
-        const course = await Lesson_progressModel.update({
-          _id, title, description, author, price, thumbnail, lessons: JSON.parse(lessons)
-        });
 
-        res.status(201).json({
-          message: "Course updated successfully",
-          course
-        });
-      
+
+      const { _id, user_id, course_id, lesson_id, is_completed } = req.body;
+      const progress = await Lesson_progressModel.update({
+        _id, user_id, course_id, lesson_id, is_completed
+      });
+
+      res.status(201).json({
+        message: "Lesson Progress updated successfully",
+        progress
+      });
+
 
 
 
@@ -86,7 +81,7 @@ const Lesson_progressController = {
     }
   },
 
- 
+
 };
 
 module.exports = Lesson_progressController;

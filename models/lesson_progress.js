@@ -3,44 +3,38 @@
 const pool = require("../connection");
 
 const Lesson_progressModel = {
-  
-  create: async ({ title, description, author, price, thumbnail, lessons }) => {
-      debugger
+
+  create: async ({ user_id, course_id, lesson_id }) => {
+
     const query = `
-      INSERT INTO courses (title, description, author, price, thumbnail, lessons)
-      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-      RETURNING _id, title, description, author, price, thumbnail, lessons
+    INSERT INTO lesson_progress (user_id, course_id, lesson_id, is_completed, completed_at)
+VALUES ($1, $2, $3, TRUE, NOW())
+ON CONFLICT (user_id, lesson_id, course_id)
+DO UPDATE SET is_completed = TRUE, completed_at = NOW();
+
     `;
 
-    const values = [title, description, author, price, thumbnail, lessons ? JSON.stringify(lessons) : null];
+    const values = [user_id, course_id, lesson_id];
     const { rows } = await pool.query(query, values);
     return rows[0];
   },
   update: async (data) => {
 
-    const { _id, title, description, author, price, thumbnail, lessons } = data;
+    const { _id, user_id, course_id, lesson_id, is_completed } = data;
 
     const query = `
-    UPDATE courses
+    UPDATE lesson_progress
     SET
-      title       = COALESCE($1, title),
-      description = COALESCE($2, description),
-      author      = COALESCE($3, author),
-      price       = COALESCE($4, price),
-      thumbnail   = $5,
-      lessons     = COALESCE($6::jsonb, lessons)
-    WHERE _id = $7
-    RETURNING _id, title, description, author, price, thumbnail, lessons
+      user_id       = COALESCE($1, user_id),
+      course_id = COALESCE($2, course_id),
+      lesson_id      = COALESCE($3, lesson_id),
+      is_completed       = COALESCE($4, is_completed)
+    WHERE _id = $5
+    RETURNING _id, user_id, course_id, lesson_id, is_completed
   `;
 
     const values = [
-      title ?? null,
-      description ?? null,
-      author ?? null,
-      price ?? null,
-      thumbnail || null,
-      lessons ? JSON.stringify(lessons) : null,
-      _id
+      user_id, course_id, lesson_id, is_completed, _id
     ];
 
     const { rows } = await pool.query(query, values);

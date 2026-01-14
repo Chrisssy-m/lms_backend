@@ -25,7 +25,7 @@ const LessonsModel = {
       title = COALESCE($1, title),
       url = COALESCE($2, url),
       quizId = COALESCE($3, quizId),
-      type = COALESCE($4, type),
+      type = COALESCE($4, type)
     WHERE _id = $5
     RETURNING *
   `;

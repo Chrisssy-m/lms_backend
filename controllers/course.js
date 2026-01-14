@@ -137,7 +137,7 @@ const CourseController = {
       if (!lessons) {
         return res.status(404).json({ message: "Lessons not found" });
       }
-      res.json(lessons);
+      res.json({data:lessons});
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
