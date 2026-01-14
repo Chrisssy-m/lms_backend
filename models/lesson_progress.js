@@ -2,10 +2,10 @@
 
 const pool = require("../connection");
 
-const CourseModel = {
-
+const Lesson_progressModel = {
+  
   create: async ({ title, description, author, price, thumbnail, lessons }) => {
-    debugger
+      debugger
     const query = `
       INSERT INTO courses (title, description, author, price, thumbnail, lessons)
       VALUES ($1, $2, $3, $4, $5, $6::jsonb)
@@ -79,53 +79,32 @@ const CourseModel = {
 
   findAll: async () => {
     const { rows } = await pool.query(
-      "SELECT _id, title, author, price, description, thumbnail FROM courses"
+      "SELECT * FROM lesson_progress"
     );
     return rows;
   },
 
-  findLessonsById: async ({ userId, courseId }) => {
-    debugger
-    const result = await pool.query(
-      `
-    SELECT 
-      cl.lesson_id, 
-      l.title, 
-      l.type, 
-      l.url,
-      cl.lesson_order, 
-      COALESCE(lp.is_completed, FALSE) AS is_completed
-  FROM course_lessons cl
-  JOIN lessons l ON l._id = cl.lesson_id
-  LEFT JOIN lesson_progress lp 
-      ON lp.user_id = $1 
-     AND lp.course_id = cl.course_id 
-     AND lp.lesson_id = cl.lesson_id
-  WHERE cl.course_id = $2
-  ORDER BY cl.lesson_order
-
-    `,
-      [userId, courseId]
+  findLessonsById: async (id) => {
+    const { rows } = await pool.query(
+      `SELECT 
+  COALESCE(
+    json_agg(l.*) 
+      FILTER (WHERE l._id IS NOT NULL), 
+    '[]'
+  ) AS lessons
+FROM courses c
+LEFT JOIN lessons l
+  ON l._id = ANY (
+    SELECT jsonb_array_elements_text(c.lessons)::INT
+  )
+WHERE c._id = $1;`,
+      [id]
     );
 
-    // lock logic: first incomplete lesson unlocked, others locked
-    let firstIncompleteFound = false;
-    const lessons = result.rows.map(row => {
-      let locked = false;
-      if (!row.is_completed) {
-        if (!firstIncompleteFound) {
-          firstIncompleteFound = true; // first incomplete lesson unlocked
-        } else {
-          locked = true;
-        }
-      }
-      return { ...row, locked };
-    });
-
-    return lessons;
+    return rows[0];
   },
 
 
 };
 
-module.exports = CourseModel;
+module.exports = Lesson_progressModel;

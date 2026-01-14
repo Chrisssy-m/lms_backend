@@ -10,13 +10,13 @@ cloudinary.config({
   // upload_prefix: 'https://api-eu.cloudinary.com'
 });
 const CourseController = {
-  
+
   create: async (req, res) => {
-    
+
     try {
       const file = req.files.thumbnail;
       cloudinary.uploader.upload(file.tempFilePath, async (err, result) => {
-        
+
         fs.unlinkSync(file.tempFilePath);
         console.log('result', result);
         const { title, description, author, price, lessons } = req.body;
@@ -123,13 +123,21 @@ const CourseController = {
     }
   },
 
+
+
   getLessons: async (req, res) => {
+    
     try {
-      const course = await CourseModel.findLessonsById(req.params.id);
-      if (!course) {
-        return res.status(404).json({ message: "course not found" });
+      
+      const { userId, courseId } = req.body;
+      
+      const lessons = await CourseModel.findLessonsById({
+        userId, courseId
+      });
+      if (!lessons) {
+        return res.status(404).json({ message: "Lessons not found" });
       }
-      res.json(course);
+      res.json(lessons);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

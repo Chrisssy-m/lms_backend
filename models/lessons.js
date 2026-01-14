@@ -4,28 +4,29 @@ const pool = require("../connection");
 
 const LessonsModel = {
 
-  create: async ({ title, url, quizId }) => {
+  create: async ({ title, url, quizId, type }) => {
     const query = `
-      INSERT INTO lessons(title,url,quizId)
-      VALUES ($1, $2, $3)
+      INSERT INTO lessons(title,url,quizId,type)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
-    const values = [title, url, quizId];
+    const values = [title, url, quizId, type];
     const { rows } = await pool.query(query, values);
     return rows[0];
   },
   update: async (data) => {
     
-    const { _id, title, url, quizId} = data;
+    const { _id, title, url, quizId, type} = data;
 
     const query = `
     UPDATE lessons
     SET
       title = COALESCE($1, title),
       url = COALESCE($2, url),
-      quizId      = COALESCE($3, quizId)
-    WHERE _id = $4
+      quizId = COALESCE($3, quizId),
+      type = COALESCE($4, type),
+    WHERE _id = $5
     RETURNING *
   `;
 
@@ -33,6 +34,7 @@ const LessonsModel = {
       title ?? null,
       url ?? null,
       quizId ?? null,
+      type ?? null,
       _id
     ];
 
