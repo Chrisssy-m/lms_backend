@@ -19,7 +19,7 @@ const CourseController = {
 
         fs.unlinkSync(file.tempFilePath);
         console.log('result', result);
-        const { title, description, author, price, lessons } = req.body;
+        const { title, description, author, price } = req.body;
 
         // create course
         const course = await CourseModel.create({
@@ -27,8 +27,7 @@ const CourseController = {
           description,
           author,
           price,
-          thumbnail: result.url,
-          lessons: JSON.parse(lessons)
+          thumbnail: result.url
         });
 
         res.status(201).json({
@@ -54,7 +53,7 @@ const CourseController = {
           fs.unlinkSync(file.tempFilePath);
           console.log('result', result);
 
-          const { title, description, author, price, lessons } = req.body;
+          const { title, description, author, price } = req.body;
 
           const _id = parseInt(req.params.id, 10);
           const thumbnail = result?.url || null;
@@ -64,8 +63,7 @@ const CourseController = {
             description,
             author,
             price,
-            thumbnail,
-            lessons: JSON.parse(lessons)
+            thumbnail
           });
 
           res.status(201).json({
@@ -74,9 +72,9 @@ const CourseController = {
           });
         })
       } else {
-        const { _id, title, description, author, price, thumbnail, lessons } = req.body;
+        const { _id, title, description, author, price, thumbnail } = req.body;
         const course = await CourseModel.update({
-          _id, title, description, author, price, thumbnail, lessons: JSON.parse(lessons)
+          _id, title, description, author, price, thumbnail
         });
 
         res.status(201).json({

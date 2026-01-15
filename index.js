@@ -10,6 +10,8 @@ const lessonsRoutes = require('./routes/lessonsRoute')
 const enrollmentRoutes = require('./routes/enrollmentRoute')
 const course_lessonsRoutes = require('./routes/course_lessons')
 const lessons_progressRoutes = require('./routes/lesson_progress')
+const quizRoutes = require('./routes/quizRoute')
+const quiz_questions = require('./routes/quiz_questionsRoute')
 
 const fileUpload = require("express-fileupload");
 
@@ -41,6 +43,8 @@ app.use("/api/lessons", lessonsRoutes);
 app.use("/api/enrollment", enrollmentRoutes);
 app.use("/api/course_lessons", course_lessonsRoutes);
 app.use("/api/lesson_progress", lessons_progressRoutes);
+app.use("/api/quiz", quizRoutes);
+app.use("/api/quiz_questions", quiz_questions);
 
 
 app.listen(PORT, () => {

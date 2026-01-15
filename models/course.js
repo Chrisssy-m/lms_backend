@@ -4,21 +4,21 @@ const pool = require("../connection");
 
 const CourseModel = {
 
-  create: async ({ title, description, author, price, thumbnail, lessons }) => {
+  create: async ({ title, description, author, price, thumbnail }) => {
     debugger
     const query = `
-      INSERT INTO courses (title, description, author, price, thumbnail, lessons)
-      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-      RETURNING _id, title, description, author, price, thumbnail, lessons
+      INSERT INTO courses (title, description, author, price, thumbnail)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING _id, title, description, author, price, thumbnail
     `;
 
-    const values = [title, description, author, price, thumbnail, lessons ? JSON.stringify(lessons) : null];
+    const values = [title, description, author, price, thumbnail];
     const { rows } = await pool.query(query, values);
     return rows[0];
   },
   update: async (data) => {
-
-    const { _id, title, description, author, price, thumbnail, lessons } = data;
+    
+    const { _id, title, description, author, price, thumbnail } = data;
 
     const query = `
     UPDATE courses
@@ -27,10 +27,9 @@ const CourseModel = {
       description = COALESCE($2, description),
       author      = COALESCE($3, author),
       price       = COALESCE($4, price),
-      thumbnail   = $5,
-      lessons     = COALESCE($6::jsonb, lessons)
-    WHERE _id = $7
-    RETURNING _id, title, description, author, price, thumbnail, lessons
+      thumbnail   = $5
+    WHERE _id = $6
+    RETURNING _id, title, description, author, price, thumbnail
   `;
 
     const values = [
@@ -39,7 +38,6 @@ const CourseModel = {
       author ?? null,
       price ?? null,
       thumbnail || null,
-      lessons ? JSON.stringify(lessons) : null,
       _id
     ];
 
@@ -52,18 +50,7 @@ const CourseModel = {
 
   findById: async (id) => {
     const { rows } = await pool.query(
-      `
-       SELECT 
-      c.*,
-      COALESCE(json_agg(l.*) FILTER (WHERE l._id IS NOT NULL), '[]') AS lessons_data
-    FROM courses c
-    LEFT JOIN lessons l
-      ON l._id = ANY (
-        SELECT jsonb_array_elements_text(c.lessons)::INT
-      )
-    WHERE c._id = $1
-    GROUP BY c._id;
-      `,
+      "SELECT * FROM courses WHERE _id = $1",
       [id]
     );
     return rows[0];
