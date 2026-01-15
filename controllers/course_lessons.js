@@ -6,21 +6,28 @@ const Course_LessonsController = {
 
     create: async (req, res) => {
         try {
-            const { course_id, lesson_id } = req.body;
-            
-            if (!course_id || !Array.isArray(lesson_id) || lesson_id.length === 0) {
-                return res.status(400).json({ message: "Invalid payload" });
+            const { course_id, lesson_id, quizid } = req.body;
+            const table = await Course_LessonsModel.findAll();
+            const dups = table?.map(x => x.course_id) || []
+
+            if (dups?.includes(course_id)) {
+                return res.status(400).json({ message: "This course is alreay exist in table!" });
+            } else {
+                if (!course_id || !Array.isArray(lesson_id) || lesson_id.length === 0) {
+                    return res.status(400).json({ message: "Invalid payload" });
+                }
+
+                // create 
+                const course_lesson = await Course_LessonsModel.create({
+                    course_id, lesson_id, quizid
+                });
+
+                res.status(201).json({
+                    message: course_lesson,
+
+                });
             }
 
-            // create 
-            const course_lesson = await Course_LessonsModel.create({
-                course_id, lesson_id
-            });
-
-            res.status(201).json({
-                message: course_lesson,
-
-            });
 
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -30,7 +37,7 @@ const Course_LessonsController = {
 
     update: async (req, res) => {
         try {
-            const { course_id, lesson_id } = req.body;
+            const { course_id, lesson_id, quizid } = req.body;
 
             if (!course_id || !Array.isArray(lesson_id) || lesson_id.length === 0) {
                 return res.status(400).json({ message: "Invalid payload" });
@@ -38,7 +45,7 @@ const Course_LessonsController = {
 
             // create 
             const course_lesson = await Course_LessonsModel.update({
-                course_id, lesson_id
+                course_id, lesson_id, quizid
             });
 
             res.status(201).json({

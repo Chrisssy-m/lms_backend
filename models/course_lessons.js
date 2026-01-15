@@ -4,31 +4,23 @@ const pool = require("../connection");
 
 const Course_LessonsModel = {
 
-    create: async ({ course_id, lesson_id }) => {
-        const { rows } = await pool.query(
-            "SELECT _id FROM courses"
-        );
-        const courseIds = rows?.map(x => x._id)
-        console.log('dupIds', courseIds)
-        if (courseIds.includes(course_id)) {
-            return 'This course already exist in table try updating it!'
-        } else {
-            await pool.query("BEGIN");
-            const insertQuery = `
-          INSERT INTO course_lessons (course_id, lesson_id, lesson_order)
-          VALUES ($1, $2, $3)
-        `;
-            for (let i = 0; i < lesson_id.length; i++) {
-                await pool.query(insertQuery, [course_id, lesson_id[i], i + 1]);
-            }
+    create: async ({ course_id, lesson_id, quizid }) => {
 
-            await pool.query("COMMIT");
+
+        await pool.query("BEGIN");
+        const insertQuery = `
+          INSERT INTO course_lessons (course_id, lesson_id, lesson_order, quizid)
+          VALUES ($1, $2, $3, $4)
+        `;
+        for (let i = 0; i < lesson_id.length; i++) {
+            await pool.query(insertQuery, [course_id, lesson_id[i], i + 1, quizid]);
         }
 
+        await pool.query("COMMIT");
     },
 
 
-    update: async ({ course_id, lesson_id }) => {
+    update: async ({ course_id, lesson_id, quizid }) => {
 
 
 
@@ -42,11 +34,11 @@ const Course_LessonsModel = {
 
         // 2️⃣ Insert updated lessons with new order
         const insertQuery = `
-      INSERT INTO course_lessons (course_id, lesson_id, lesson_order)
-      VALUES ($1, $2, $3)
+      INSERT INTO course_lessons (course_id, lesson_id, lesson_order, quizid)
+      VALUES ($1, $2, $3, $4)
     `;
         for (let i = 0; i < lesson_id.length; i++) {
-            await pool.query(insertQuery, [course_id, lesson_id[i], i + 1]);
+            await pool.query(insertQuery, [course_id, lesson_id[i], i + 1, quizid]);
         }
 
         await pool.query("COMMIT");
@@ -55,15 +47,17 @@ const Course_LessonsModel = {
     },
     findById: async (id) => {
         const { rows } = await pool.query(
-            `SELECT lesson_id
+            `SELECT lesson_id, quizId
    FROM course_lessons
    WHERE course_id = $1
    ORDER BY lesson_order`,
             [id]
         );
+    
         const output = {
             courseId: Number(id),
-            lessonId: rows.map(row => row.lesson_id)
+            lessonId: rows.map(row => row.lesson_id),
+            quizId: rows[0]?.quizid
         };
         return output;
 
