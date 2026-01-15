@@ -6,19 +6,19 @@ const Course_LessonsController = {
 
     create: async (req, res) => {
         try {
-            const { userId, courseId, lessonId } = req.body;
-
-            if (!userId || !courseId  || !lessonId ) {
+            const { course_id, lesson_id } = req.body;
+            
+            if (!course_id || !Array.isArray(lesson_id) || lesson_id.length === 0) {
                 return res.status(400).json({ message: "Invalid payload" });
             }
 
             // create 
-            const course_progress = await Course_LessonsModel.create({
-                 userId, courseId, lessonId
+            const course_lesson = await Course_LessonsModel.create({
+                course_id, lesson_id
             });
 
             res.status(201).json({
-                message: course_progress,
+                message: course_lesson,
 
             });
 
@@ -52,7 +52,7 @@ const Course_LessonsController = {
     },
     getAll: async (req, res) => {
         try {
-            
+
             const course_lessons = await Course_LessonsModel.findAll();
             res.status(200).json(course_lessons);
         } catch (error) {

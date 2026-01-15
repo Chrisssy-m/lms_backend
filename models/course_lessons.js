@@ -4,17 +4,27 @@ const pool = require("../connection");
 
 const Course_LessonsModel = {
 
-    create: async ({ userId, courseId, lessonId }) => {
-
-        await pool.query(
-            `INSERT INTO lesson_progress (user_id, course_id, lesson_id, is_completed, completed_at)
-       VALUES ($1, $2, $3, TRUE, NOW())
-       ON CONFLICT (user_id, lesson_id, course_id)
-       DO UPDATE SET is_completed = TRUE, completed_at = NOW()`,
-            [userId, courseId, lessonId]
+    create: async ({ course_id, lesson_id }) => {
+        const { rows } = await pool.query(
+            "SELECT _id FROM courses"
         );
+        const courseIds = rows?.map(x => x._id)
+        console.log('dupIds', courseIds)
+        if (courseIds.includes(course_id)) {
+            return 'This course already exist in table try updating it!'
+        } else {
+            await pool.query("BEGIN");
+            const insertQuery = `
+          INSERT INTO course_lessons (course_id, lesson_id, lesson_order)
+          VALUES ($1, $2, $3)
+        `;
+            for (let i = 0; i < lesson_id.length; i++) {
+                await pool.query(insertQuery, [course_id, lesson_id[i], i + 1]);
+            }
 
-        return "Lesson marked completed"
+            await pool.query("COMMIT");
+        }
+
     },
 
 
