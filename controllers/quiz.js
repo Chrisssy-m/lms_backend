@@ -31,7 +31,7 @@ const QuizController = {
             const { _id, name, questions } = req.body;
 
             // update user
-            const  quiz = await QuizModel.update({
+            const quiz = await QuizModel.update({
                 _id, name, questions
             });
 
@@ -76,6 +76,14 @@ const QuizController = {
         }
     },
 
+    getFinalExamQuiz: async (req, res) => {
+        try {
+            const quiz = await QuizModel.findFinalExam(req.params.id);
+            res.status(200).json(quiz);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
 
 };
 

@@ -12,6 +12,8 @@ router.delete("/:id", QuizController.delete); //delete
 router.put("/:id", QuizController.update); //update 
 router.post("/", QuizController.create); //create
 
+router.get("/final_exam/:id", QuizController.getFinalExamQuiz); //get
+
 
 
 module.exports = router;

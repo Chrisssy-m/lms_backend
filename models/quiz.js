@@ -15,7 +15,7 @@ const QuizModel = {
         return rows[0];
     },
     update: async (data) => {
-        
+
         const { _id, name, questions } = data;
 
         const query = `
@@ -55,8 +55,29 @@ RETURNING *;
             "SELECT * FROM quiz"
         );
         return rows;
-    }
+    },
 
+    findFinalExam: async (id) => {
+        const { rows } = await pool.query(
+            `
+      SELECT
+  q._id AS quiz_id,
+  q.name,
+  COALESCE(
+    json_agg(qq.*),
+    '[]'
+  ) AS questions
+FROM quiz q
+LEFT JOIN quiz_questions qq
+  ON qq._id IN (
+    SELECT jsonb_array_elements_text(q.questions)::int
+  )
+WHERE q._id = $1
+GROUP BY q._id, q.name;
+      `, [id]
+        )
+        return rows
+    }
 };
 
 module.exports = QuizModel;
