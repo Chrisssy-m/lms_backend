@@ -32,42 +32,17 @@ const EnrollmentController = {
 
         try {
 
-            const file = req?.files?.thumbnail;
-            if (file) {
-                cloudinary.uploader.upload(file.tempFilePath, async (err, result) => {
-                    fs.unlinkSync(file.tempFilePath);
-                    console.log('result', result);
-
-                    const { title, description, author, price, lessons } = req.body;
-
-                    const _id = parseInt(req.params.id, 10);
-                    const thumbnail = result?.url || null;
-                    const course = await EnrollmentModel.update({
-                        _id,
-                        title,
-                        description,
-                        author,
-                        price,
-                        thumbnail,
-                        lessons: JSON.parse(lessons)
-                    });
-
-                    res.status(201).json({
-                        message: "Course updated successfully",
-                        course
-                    });
-                })
-            } else {
-                const { _id, title, description, author, price, thumbnail, lessons } = req.body;
-                const course = await EnrollmentModel.update({
-                    _id, title, description, author, price, thumbnail, lessons: JSON.parse(lessons)
+            
+                const { user_id, course_id, status } = req.body;
+                const enrollment = await EnrollmentModel.update({
+                    user_id, course_id, status
                 });
 
                 res.status(201).json({
-                    message: "Course updated successfully",
-                    course
+                    message: "Enrollment updated successfully",
+                    enrollment
                 });
-            }
+            
 
 
 

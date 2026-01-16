@@ -17,29 +17,18 @@ const EnrollmentModel = {
     },
     update: async (data) => {
 
-        const { _id, title, description, author, price, thumbnail, lessons } = data;
+        const { user_id, course_id, status } = data;
 
         const query = `
-    UPDATE courses
-    SET
-      title       = COALESCE($1, title),
-      description = COALESCE($2, description),
-      author      = COALESCE($3, author),
-      price       = COALESCE($4, price),
-      thumbnail   = $5,
-      lessons     = COALESCE($6::jsonb, lessons)
-    WHERE _id = $7
-    RETURNING _id, title, description, author, price, thumbnail, lessons
+    UPDATE enrollments
+SET status = $3
+WHERE user_id = $1 AND course_id = $2
+RETURNING user_id, course_id, enrolled_at, status;
+
   `;
 
         const values = [
-            title ?? null,
-            description ?? null,
-            author ?? null,
-            price ?? null,
-            thumbnail || null,
-            lessons ? JSON.stringify(lessons) : null,
-            _id
+            user_id, course_id, status
         ];
 
         const { rows } = await pool.query(query, values);
