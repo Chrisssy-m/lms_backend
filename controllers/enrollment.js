@@ -62,6 +62,7 @@ const EnrollmentController = {
 
     getById: async (req, res) => {
         try {
+
             const enrollment = await EnrollmentModel.findById(req.params.id);
             if (!enrollment) {
                 return res.status(404).json({ message: "enrollment not found" });
@@ -86,6 +87,7 @@ const EnrollmentController = {
 
     delete: async (req, res) => {
         try {
+           
             const course = await EnrollmentModel.deleteById(req.params.id);
             if (!course) {
                 return res.status(400).json({ message: "Course not found!" });

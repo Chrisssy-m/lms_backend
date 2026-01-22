@@ -30,14 +30,14 @@ const UserController = {
         role
       });
 
-      // try {
-      //   await sendConfirmationEmail({
-      //     email: email,
-      //     name: name,
-      //   });
-      // } catch (emailErr) {
-      //   console.error("Email failed to send:", emailErr);
-      // }
+      try {
+        await sendConfirmationEmail({
+          email: email,
+          name: name,
+        });
+      } catch (emailErr) {
+        console.error("Email failed to send:", emailErr);
+      }
 
 
       res.status(201).json({
