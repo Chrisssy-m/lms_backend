@@ -5,20 +5,20 @@ const { Pool } = require("pg");
 
 const pool = new Pool({
     // for local
-    
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    port: Number(process.env.DB_PORT),
+
+    // user: process.env.DB_USER,
+    // password: process.env.DB_PASSWORD,
+    // host: process.env.DB_HOST,
+    // database: process.env.DB_NAME,
+    // port: Number(process.env.DB_PORT),
 
 
     // for production
 
-    // connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false, // required for Railway
-    // },
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false, // required for Railway
+    },
 });
 
 pool.on("connect", () => {
