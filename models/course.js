@@ -176,18 +176,109 @@ const CourseModel = {
     return rows[0];
   },
 
+  //   findLessonsById: async ({ userId, courseId }) => {
+
+  //     // 1️⃣ Lessons + progress
+  //     const result = await pool.query(
+  //       `
+  //     SELECT 
+  //       cl.lesson_id, 
+  //       l.title, 
+  //       l.type, 
+  //       l.url,
+  //       cl.lesson_order, 
+  //       cl.quizid, 
+  //       COALESCE(lp.is_completed, FALSE) AS is_completed
+  //     FROM course_lessons cl
+  //     JOIN lessons l ON l._id = cl.lesson_id
+  //     LEFT JOIN lesson_progress lp 
+  //       ON lp.user_id = $1 
+  //      AND lp.course_id = cl.course_id 
+  //      AND lp.lesson_id = cl.lesson_id
+  //     WHERE cl.course_id = $2
+  //     ORDER BY cl.lesson_order
+  //     `,
+  //       [userId, courseId]
+  //     );
+
+  //     // 2️⃣ Lock logic (first incomplete unlocked)
+  //     let firstIncompleteFound = false;
+
+  //     const lessons = result.rows.map(row => {
+  //       let locked = false;
+
+  //       if (!row.is_completed) {
+  //         if (!firstIncompleteFound) {
+  //           firstIncompleteFound = true;
+  //         } else {
+  //           locked = true;
+  //         }
+  //       }
+
+  //       return { ...row, locked };
+  //     });
+
+  //     // 3️⃣ quizid extract (same for all lessons)
+  //     const quizId = lessons[0]?.quizid || null;
+
+  //     let quiz = null;
+
+  //     // 4️⃣ Quiz + questions (ONLY ONE TIME)
+  //     if (quizId) {
+  //       const quizResult = await pool.query(
+  //         `
+  //   SELECT 
+  //   q._id,
+  //   q.name,
+  //   COALESCE(
+  //     (
+  //       SELECT jsonb_agg(qq.*)
+  //       FROM quiz_questions qq
+  //       JOIN LATERAL jsonb_array_elements_text(q.questions) AS qid(id) ON qq._id = qid.id::int
+  //     ),
+  //     '[]'::jsonb
+  //   ) AS questions
+  // FROM quiz q
+  // WHERE q._id = $1;
+
+
+  //       `,
+  //         [quizId]
+  //       );
+
+  //       quiz = quizResult.rows[0] || null;
+  //     }
+
+  //     // 5️⃣ Final exam lock logic
+  //     const allLessonsCompleted = lessons.every(l => l.is_completed);
+
+  //     // 6️⃣ FINAL RESPONSE
+  //     return {
+  //       data: lessons,
+  //       quiz: quiz
+  //         ? {
+  //           ...quiz,
+  //           locked: !allLessonsCompleted
+  //         }
+  //         : null
+  //     };
+  //   },
+
   findLessonsById: async ({ userId, courseId }) => {
 
-    // 1️⃣ Lessons + progress
-    const result = await pool.query(
-      `
+  /**
+   * 1️⃣ Lessons + progress + lesson quiz
+   */
+  const result = await pool.query(
+    `
     SELECT 
       cl.lesson_id, 
       l.title, 
-      l.type, 
+      l.outline, 
       l.url,
       cl.lesson_order, 
-      cl.quizid, 
+      l.quizid       AS lesson_quizid,
+      cl.quizid      AS final_quizid,
       COALESCE(lp.is_completed, FALSE) AS is_completed
     FROM course_lessons cl
     JOIN lessons l ON l._id = cl.lesson_id
@@ -198,71 +289,124 @@ const CourseModel = {
     WHERE cl.course_id = $2
     ORDER BY cl.lesson_order
     `,
-      [userId, courseId]
-    );
+    [userId, courseId]
+  );
 
-    // 2️⃣ Lock logic (first incomplete unlocked)
-    let firstIncompleteFound = false;
+  /**
+   * 2️⃣ Lesson locking
+   */
+  let firstIncompleteFound = false;
 
-    const lessons = result.rows.map(row => {
-      let locked = false;
+  const lessons = result.rows.map(row => {
+    let locked = false;
 
-      if (!row.is_completed) {
-        if (!firstIncompleteFound) {
-          firstIncompleteFound = true;
-        } else {
-          locked = true;
-        }
+    if (!row.is_completed) {
+      if (!firstIncompleteFound) {
+        firstIncompleteFound = true;
+      } else {
+        locked = true;
       }
-
-      return { ...row, locked };
-    });
-
-    // 3️⃣ quizid extract (same for all lessons)
-    const quizId = lessons[0]?.quizid || null;
-
-    let quiz = null;
-
-    // 4️⃣ Quiz + questions (ONLY ONE TIME)
-    if (quizId) {
-      const quizResult = await pool.query(
-        `
-  SELECT 
-  q._id,
-  q.name,
-  COALESCE(
-    (
-      SELECT jsonb_agg(qq.*)
-      FROM quiz_questions qq
-      JOIN LATERAL jsonb_array_elements_text(q.questions) AS qid(id) ON qq._id = qid.id::int
-    ),
-    '[]'::jsonb
-  ) AS questions
-FROM quiz q
-WHERE q._id = $1;
-
-
-      `,
-        [quizId]
-      );
-
-      quiz = quizResult.rows[0] || null;
     }
 
-    // 5️⃣ Final exam lock logic
-    const allLessonsCompleted = lessons.every(l => l.is_completed);
-
-    // 6️⃣ FINAL RESPONSE
     return {
-      data: lessons,
+      lesson_id: row.lesson_id,
+      title: row.title,
+      outline: row.outline,
+      url: row.url,
+      lesson_order: row.lesson_order,
+      quizid: row.lesson_quizid,
+      is_completed: row.is_completed,
+      locked
+    };
+  });
+
+  /**
+   * 3️⃣ Extract quiz IDs
+   */
+  const lessonQuizIds = [
+    ...new Set(
+      lessons
+        .map(l => l.quizid)
+        .filter(Boolean)
+    )
+  ];
+
+  const finalQuizId = result.rows[0]?.final_quizid || null;
+
+  const allQuizIds = [
+    ...new Set([...lessonQuizIds, finalQuizId].filter(Boolean))
+  ];
+
+  /**
+   * 4️⃣ Fetch all quizzes (LESSON + FINAL)
+   */
+  let quizMap = {};
+
+  if (allQuizIds.length) {
+    const quizResult = await pool.query(
+      `
+      SELECT 
+        q._id,
+        q.name,
+        COALESCE(
+          (
+            SELECT jsonb_agg(qq.*)
+            FROM quiz_questions qq
+            JOIN LATERAL jsonb_array_elements_text(q.questions) AS qid(id)
+              ON qq._id = qid.id::int
+          ),
+          '[]'::jsonb
+        ) AS questions
+      FROM quiz q
+      WHERE q._id = ANY($1::int[])
+      `,
+      [allQuizIds]
+    );
+
+    quizResult.rows.forEach(q => {
+      quizMap[q._id] = q;
+    });
+  }
+
+  /**
+   * 5️⃣ Inject lesson quiz
+   */
+  const lessonsWithQuiz = lessons.map(lesson => {
+    const quiz = lesson.quizid
+      ? quizMap[lesson.quizid] || null
+      : null;
+
+    return {
+      ...lesson,
       quiz: quiz
         ? {
-          ...quiz,
-          locked: !allLessonsCompleted
-        }
+            ...quiz,
+            locked: !lesson.is_completed
+          }
         : null
     };
-  },
+  });
+
+  /**
+   * 6️⃣ FINAL EXAM LOCK
+   */
+  const allLessonsCompleted = lessons.every(l => l.is_completed);
+
+  const finalQuiz = finalQuizId
+    ? {
+        ...quizMap[finalQuizId],
+        locked: !allLessonsCompleted
+      }
+    : null;
+
+  /**
+   * 7️⃣ Final response
+   */
+  return {
+    lessons: lessonsWithQuiz,
+    finalQuiz
+  };
+}
 
 
 };

@@ -5,13 +5,13 @@ const LessonsController = {
 
     create: async (req, res) => {
         try {
-            const { title, url, quizId, type } = req.body;
+            const { title, url, quizid, outline } = req.body;
 
 
 
             // create user
             const lesson = await LessonsModel.create({
-                title, url, quizId, type
+                title, url, quizid, outline
             });
 
             res.status(201).json({
@@ -27,10 +27,10 @@ const LessonsController = {
 
     update: async (req, res) => {
         try {
-            const { _id, title, url, quizId, type } = req.body;
+            const { _id, title, url, quizid, outline} = req.body;
             // update user
             const lesson = await LessonsModel.update({
-                _id, title, url, quizId, type
+                _id, title, url, quizid, outline
             });
 
             res.status(201).json({

@@ -4,28 +4,28 @@ const pool = require("../connection");
 const { getTotalRec, getPaginatedData } = require("./utils");
 const LessonsModel = {
 
-  create: async ({ title, url, quizId, type }) => {
+  create: async ({ title, url, quizid, outline }) => {
     const query = `
-      INSERT INTO lessons(title,url,quizId,type)
+      INSERT INTO lessons(title, url, quizid, outline)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
 
-    const values = [title, url, quizId, type];
+    const values = [title, url, quizid, outline];
     const { rows } = await pool.query(query, values);
     return rows[0];
   },
   update: async (data) => {
 
-    const { _id, title, url, quizId, type } = data;
+    const { _id, title, url, quizid, outline } = data;
 
     const query = `
     UPDATE lessons
     SET
       title = COALESCE($1, title),
       url = COALESCE($2, url),
-      quizId = COALESCE($3, quizId),
-      type = COALESCE($4, type)
+      quizid = COALESCE($3, quizid),
+      outline = COALESCE($4, outline)
     WHERE _id = $5
     RETURNING *
   `;
@@ -33,8 +33,8 @@ const LessonsModel = {
     const values = [
       title ?? null,
       url ?? null,
-      quizId ?? null,
-      type ?? null,
+      quizid ?? null,
+      outline ?? null,
       _id
     ];
 
