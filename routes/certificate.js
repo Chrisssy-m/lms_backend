@@ -15,4 +15,7 @@ router.put("/:id", verifyJWT,CertificateController.update); //update
 router.post("/", verifyJWT,CertificateController.create); //create
 
 router.post("/search", verifyJWT,CertificateController.getFilters);
+
+
+router.post("/confirm", verifyJWT, CertificateController.sendCertificateEmail);
 module.exports = router;

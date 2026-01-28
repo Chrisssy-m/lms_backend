@@ -71,7 +71,13 @@ const CertificateModel = {
         );
         return rows[0];
     },
-
+    findCourseById: async (id) => {
+        const { rows } = await pool.query(
+            "SELECT * FROM certificate WHERE course_id = $1",
+            [id]
+        );
+        return rows[0];
+    },
     deleteById: async (id) => {
         const { rows } = await pool.query(
             "DELETE FROM certificate WHERE _id = $1 RETURNING *;",

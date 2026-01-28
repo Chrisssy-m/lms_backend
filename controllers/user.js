@@ -3,7 +3,9 @@ const bcrypt = require("bcryptjs");
 const UserModel = require("../models/users");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../helpers.js/helpers");
-const { sendConfirmationEmail, sendRemindersEmail } = require("../lib/sendConfirmationEmail");
+const { sendConfirmationEmail, sendRemindersEmail, sendCertificate } = require("../lib/sendConfirmationEmail");
+const CertificateModel = require("../models/certificate");
+const CertificateController = require("./certificate");
 
 const UserController = {
 
@@ -183,7 +185,7 @@ const UserController = {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-     
+
       const data = await sendRemindersEmail({
         email: user?.email,
         name: user?.name,
@@ -191,14 +193,15 @@ const UserController = {
         remainingAmount: amount
       });
 
-       res.status(200).json({
+      res.status(200).json({
         message: "Email send successfully!",
         data
       });
     } catch (emailErr) {
       console.error("Email failed to send:", emailErr);
     }
-  }
+  },
+ 
 };
 
 module.exports = UserController;

@@ -27,8 +27,8 @@ const EnrollmentModel = {
         if (singleGet.rows.length === 0) {
             throw new Error("Enrollment not found");
         }
-        
-        const id = singleGet?.rows[0]?._id
+        const record = singleGet?.rows[0]
+        const id = record?._id
         const query = `
             UPDATE enrollments
         SET 
@@ -40,7 +40,7 @@ const EnrollmentModel = {
           `;
 
         const values = [
-            status, payment, id
+            status, payment ?? record?.payment, id
         ];
 
         const { rows } = await pool.query(query, values);
@@ -66,7 +66,8 @@ const EnrollmentModel = {
         const query = `
   SELECT 
       c.*, 
-      e.payment
+      e.payment,
+      e.status
   FROM enrollments e
   INNER JOIN courses c ON c._id = e.course_id
   WHERE e.user_id = $1;

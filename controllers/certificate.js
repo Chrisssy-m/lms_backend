@@ -3,6 +3,8 @@
 const cloudinary = require("cloudinary").v2
 const fs = require('fs');
 const CertificateModel = require("../models/certificate");
+const { sendCertificate } = require("../lib/sendConfirmationEmail");
+const UserModel = require("../models/users");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUDNAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -19,7 +21,7 @@ const CertificateController = {
             const { course_id } = req.body;
             const table = await CertificateModel.findAll({});
             const dups = table?.map(x => x.course_id) || []
-            
+
             if (dups?.includes(Number(course_id))) {
                 return res.status(200).json({ message: "The certificate is already generated for this course!" });
             } else {
@@ -113,6 +115,37 @@ const CertificateController = {
             res.status(500).json({ error: error.message });
         }
     },
+
+
+
+    sendCertificateEmail: async (req, res) => {
+        try {
+            const { course_id, user_id } = req.body;
+            const user = await UserModel.findById(user_id);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            const certificate = await CertificateModel.findCourseById(course_id);
+            if (!certificate) {
+                return res.status(404).json({ message: "certificate not found" });
+            }
+            const data = await sendCertificate({
+                email: user?.email,
+                name: user?.name,
+                subject: "Congratulations on Earning Your Certificate!",
+                certificateImageUrl: certificate?.url
+            });
+
+            res.status(200).json({
+                message: "Certificate send successfully!",
+                data
+            });
+        } catch (emailErr) {
+            console.error("Email failed to send:", emailErr);
+        }
+    },
+
+
     delete: async (req, res) => {
         try {
             const certificate = await CertificateModel.deleteById(req.params.id);
