@@ -4,31 +4,43 @@ const pool = require("../connection");
 
 const EnrollmentModel = {
 
-    create: async ({ user_id, course_id, status }) => {
+    create: async ({ user_id, course_id, status, payment }) => {
         const query = `
-      INSERT INTO enrollments (user_id, course_id, status)
-      VALUES ($1, $2, $3)
-      RETURNING user_id, course_id, enrolled_at, status
+      INSERT INTO enrollments (user_id, course_id, status, payment)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
     `;
 
-        const values = [user_id, course_id, status];
+        const values = [user_id, course_id, status, payment ?? '100% Complete',];
         const { rows } = await pool.query(query, values);
         return rows[0];
     },
     update: async (data) => {
 
-        const { user_id, course_id, status } = data;
+        const { user_id, course_id, status, payment } = data;
 
+        const singleGet = await pool.query(
+            "SELECT * FROM enrollments WHERE user_id = $1 AND  course_id = $2",
+            [user_id, course_id]
+        );
+
+        if (singleGet.rows.length === 0) {
+            throw new Error("Enrollment not found");
+        }
+        
+        const id = singleGet?.rows[0]?._id
         const query = `
-    UPDATE enrollments
-SET status = $3
-WHERE user_id = $1 AND course_id = $2
-RETURNING user_id, course_id, enrolled_at, status;
+            UPDATE enrollments
+        SET 
+        status = $1,
+        payment = $2
+        WHERE _id = $3
+        RETURNING *;
 
-  `;
+          `;
 
         const values = [
-            user_id, course_id, status
+            status, payment, id
         ];
 
         const { rows } = await pool.query(query, values);
@@ -47,12 +59,19 @@ RETURNING user_id, course_id, enrolled_at, status;
     },
 
     findCourseById: async (id) => {
+        // SELECT c.*
+        // FROM enrollments e
+        // INNER JOIN courses c ON c._id = e.course_id
+        // WHERE e.user_id = $1
         const query = `
-    SELECT c.*
-    FROM enrollments e
-    INNER JOIN courses c ON c._id = e.course_id
-    WHERE e.user_id = $1
-  `;
+  SELECT 
+      c.*, 
+      e.payment
+  FROM enrollments e
+  INNER JOIN courses c ON c._id = e.course_id
+  WHERE e.user_id = $1;
+`;
+
 
         const { rows } = await pool.query(query, [id]);
         return rows
@@ -69,7 +88,7 @@ RETURNING user_id, course_id, enrolled_at, status;
         let query;
         let values;
 
-         if (col === "_id" || col === 'course_id' ||  col === 'user_id') {
+        if (col === "_id" || col === 'course_id' || col === 'user_id') {
             query = `
     SELECT *
     FROM enrollments

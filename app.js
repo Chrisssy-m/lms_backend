@@ -2,7 +2,7 @@
 require('dotenv').config()
 const express = require("express");
 const cors = require("cors")
-const Stripe =  require("stripe")
+const Stripe = require("stripe")
 const bodyParser = require('body-parser');
 const PORT = process.env.PORT;
 const app = express();
@@ -16,13 +16,16 @@ const quizRoutes = require('./routes/quizRoute')
 const quiz_questions = require('./routes/quiz_questionsRoute')
 const course_desc = require('./routes/course_desc_route')
 const review = require('./routes/reviewRoute')
+const certificate = require('./routes/certificate')
 
 const fileUpload = require("express-fileupload");
+const { verifyJWT } = require('./middlewares/authenticate');
+
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 app.use(fileUpload({
-  useTempFiles:true
+  useTempFiles: true
 }))
 // plugins
 app.use(cors())
@@ -53,12 +56,13 @@ app.use("/api/quiz", quizRoutes);
 app.use("/api/quiz_questions", quiz_questions);
 app.use("/api/events", course_desc);
 app.use("/api/reviews", review);
+app.use("/api/certificate", certificate);
 
 // stripe
 app.post("/api/create-payment-intent", async (req, res) => {
   try {
     const { amount } = req.body; // amount in cents
-
+   
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: "usd",
@@ -74,8 +78,10 @@ app.post("/api/create-payment-intent", async (req, res) => {
 });
 
 
+
+
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
 
 

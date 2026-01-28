@@ -17,4 +17,6 @@ router.post("/login", UserController.login); //login
 
 router.post("/search", verifyJWT, UserController.getFilters);
 
+router.post("/email", verifyJWT, UserController.sendEmail);
+
 module.exports = router;

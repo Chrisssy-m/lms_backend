@@ -108,6 +108,8 @@ const UserModel = {
     return rows;
   },
 
+  
+
 };
 
 module.exports = UserModel;

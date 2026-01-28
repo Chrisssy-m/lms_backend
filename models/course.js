@@ -5,7 +5,7 @@ const { getTotalRec, getPaginatedData } = require("./utils");
 const CourseModel = {
 
   create: async ({ title, description, author, price, thumbnail }) => {
-    debugger
+    
     const query = `
       INSERT INTO courses (title, description, author, price, thumbnail)
       VALUES ($1, $2, $3, $4, $5)

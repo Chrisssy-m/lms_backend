@@ -8,11 +8,11 @@ const EnrollmentController = {
     create: async (req, res) => {
         try {
 
-            const { user_id, course_id, status } = req.body;
+            const { user_id, course_id, status, payment } = req.body;
 
             // create course
             const enrollment = await EnrollmentModel.create({
-                user_id, course_id, status
+                user_id, course_id, status, payment
             });
 
             res.status(201).json({
@@ -33,9 +33,9 @@ const EnrollmentController = {
         try {
 
 
-            const { user_id, course_id, status } = req.body;
+            const { user_id, course_id, status, payment } = req.body;
             const enrollment = await EnrollmentModel.update({
-                user_id, course_id, status
+                user_id, course_id, status, payment
             });
 
             res.status(201).json({
@@ -87,7 +87,7 @@ const EnrollmentController = {
 
     delete: async (req, res) => {
         try {
-           
+
             const course = await EnrollmentModel.deleteById(req.params.id);
             if (!course) {
                 return res.status(400).json({ message: "Course not found!" });

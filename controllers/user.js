@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const UserModel = require("../models/users");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../helpers.js/helpers");
-const { sendConfirmationEmail } = require("../lib/sendConfirmationEmail");
+const { sendConfirmationEmail, sendRemindersEmail } = require("../lib/sendConfirmationEmail");
 
 const UserController = {
 
@@ -34,6 +34,7 @@ const UserController = {
         await sendConfirmationEmail({
           email: email,
           name: name,
+          subject: `Welcome ${name}! Your Account Is Ready`
         });
       } catch (emailErr) {
         console.error("Email failed to send:", emailErr);
@@ -162,8 +163,6 @@ const UserController = {
     try {
       const { col, row } = req.query; // ✅ FIX
 
-      console.log('welcome', col, row);
-
       if (!col || !row) {
         return res.status(400).json({ error: 'col and row are required' });
       }
@@ -177,6 +176,29 @@ const UserController = {
     }
   },
 
+  sendEmail: async (req, res) => {
+    try {
+      const { userId, amount } = req.body;
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+     
+      const data = await sendRemindersEmail({
+        email: user?.email,
+        name: user?.name,
+        subject: "Payment Reminder",
+        remainingAmount: amount
+      });
+
+       res.status(200).json({
+        message: "Email send successfully!",
+        data
+      });
+    } catch (emailErr) {
+      console.error("Email failed to send:", emailErr);
+    }
+  }
 };
 
 module.exports = UserController;
