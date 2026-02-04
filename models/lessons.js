@@ -16,7 +16,7 @@ const LessonsModel = {
     return rows[0];
   },
   update: async (data) => {
-
+    
     const { _id, title, url, quizid, outline } = data;
 
     const query = `
@@ -24,7 +24,7 @@ const LessonsModel = {
     SET
       title = COALESCE($1, title),
       url = COALESCE($2, url),
-      quizid = COALESCE($3, quizid),
+      quizid = $3,
       outline = COALESCE($4, outline)
     WHERE _id = $5
     RETURNING *

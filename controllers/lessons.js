@@ -29,6 +29,7 @@ const LessonsController = {
         try {
             const { _id, title, url, quizid, outline} = req.body;
             // update user
+            
             const lesson = await LessonsModel.update({
                 _id, title, url, quizid, outline
             });

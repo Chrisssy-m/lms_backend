@@ -5,7 +5,7 @@ const { getTotalRec, getPaginatedData } = require("./utils");
 const CourseModel = {
 
   create: async ({ title, description, author, price, thumbnail }) => {
-    
+
     const query = `
       INSERT INTO courses (title, description, author, price, thumbnail)
       VALUES ($1, $2, $3, $4, $5)
@@ -155,22 +155,47 @@ const CourseModel = {
 
   getCourseFullDetail: async (courseId) => {
     const query = `
-    SELECT
-      c.*,
-      COALESCE(
-        json_agg(DISTINCT r) FILTER (WHERE r._id IS NOT NULL),
-        '[]'
-      ) AS reviews,
-      COALESCE(
-        json_agg(DISTINCT e) FILTER (WHERE e._id IS NOT NULL),
-        '[]'
-      ) AS events
-    FROM courses c
-    LEFT JOIN reviews r ON r.course_id = c._id
-    LEFT JOIN events e ON e.course_id = c._id
-    WHERE c._id = $1
-    GROUP BY c._id
-  `;
+  SELECT
+    c.*,
+
+    COALESCE(r.reviews, '[]')  AS reviews,
+    COALESCE(e.events, '[]')   AS events,
+    COALESCE(l.lessons, '[]')  AS lessons
+
+  FROM courses c
+
+  
+  LEFT JOIN LATERAL (
+    SELECT json_agg(r) AS reviews
+    FROM reviews r
+    WHERE r.course_id = c._id
+  ) r ON true
+
+ 
+  LEFT JOIN LATERAL (
+    SELECT json_agg(e) AS events
+    FROM events e
+    WHERE e.course_id = c._id
+  ) e ON true
+
+  
+ LEFT JOIN LATERAL (
+  SELECT json_agg(
+    json_build_object(
+      '_id', l._id,
+      'title', l.title,
+      'url', l.url
+    )
+  ) AS lessons
+  FROM course_lessons cl
+  JOIN lessons l ON l._id = cl.lesson_id
+  WHERE cl.course_id = c._id
+) l ON true
+
+
+  WHERE c._id = $1;
+`;
+
 
     const { rows } = await pool.query(query, [courseId]);
     return rows[0];
@@ -266,11 +291,11 @@ const CourseModel = {
 
   findLessonsById: async ({ userId, courseId }) => {
 
-  /**
-   * 1️⃣ Lessons + progress + lesson quiz
-   */
-  const result = await pool.query(
-    `
+    /**
+     * 1️⃣ Lessons + progress + lesson quiz
+     */
+    const result = await pool.query(
+      `
     SELECT 
       cl.lesson_id, 
       l.title, 
@@ -289,62 +314,62 @@ const CourseModel = {
     WHERE cl.course_id = $2
     ORDER BY cl.lesson_order
     `,
-    [userId, courseId]
-  );
+      [userId, courseId]
+    );
 
-  /**
-   * 2️⃣ Lesson locking
-   */
-  let firstIncompleteFound = false;
+    /**
+     * 2️⃣ Lesson locking
+     */
+    let firstIncompleteFound = false;
 
-  const lessons = result.rows.map(row => {
-    let locked = false;
+    const lessons = result.rows.map(row => {
+      let locked = false;
 
-    if (!row.is_completed) {
-      if (!firstIncompleteFound) {
-        firstIncompleteFound = true;
-      } else {
-        locked = true;
+      if (!row.is_completed) {
+        if (!firstIncompleteFound) {
+          firstIncompleteFound = true;
+        } else {
+          locked = true;
+        }
       }
-    }
 
-    return {
-      lesson_id: row.lesson_id,
-      title: row.title,
-      outline: row.outline,
-      url: row.url,
-      lesson_order: row.lesson_order,
-      quizid: row.lesson_quizid,
-      is_completed: row.is_completed,
-      locked
-    };
-  });
+      return {
+        lesson_id: row.lesson_id,
+        title: row.title,
+        outline: row.outline,
+        url: row.url,
+        lesson_order: row.lesson_order,
+        quizid: row.lesson_quizid,
+        is_completed: row.is_completed,
+        locked
+      };
+    });
 
-  /**
-   * 3️⃣ Extract quiz IDs
-   */
-  const lessonQuizIds = [
-    ...new Set(
-      lessons
-        .map(l => l.quizid)
-        .filter(Boolean)
-    )
-  ];
+    /**
+     * 3️⃣ Extract quiz IDs
+     */
+    const lessonQuizIds = [
+      ...new Set(
+        lessons
+          .map(l => l.quizid)
+          .filter(Boolean)
+      )
+    ];
 
-  const finalQuizId = result.rows[0]?.final_quizid || null;
+    const finalQuizId = result.rows[0]?.final_quizid || null;
 
-  const allQuizIds = [
-    ...new Set([...lessonQuizIds, finalQuizId].filter(Boolean))
-  ];
+    const allQuizIds = [
+      ...new Set([...lessonQuizIds, finalQuizId].filter(Boolean))
+    ];
 
-  /**
-   * 4️⃣ Fetch all quizzes (LESSON + FINAL)
-   */
-  let quizMap = {};
+    /**
+     * 4️⃣ Fetch all quizzes (LESSON + FINAL)
+     */
+    let quizMap = {};
 
-  if (allQuizIds.length) {
-    const quizResult = await pool.query(
-      `
+    if (allQuizIds.length) {
+      const quizResult = await pool.query(
+        `
       SELECT 
         q._id,
         q.name,
@@ -360,53 +385,53 @@ const CourseModel = {
       FROM quiz q
       WHERE q._id = ANY($1::int[])
       `,
-      [allQuizIds]
-    );
+        [allQuizIds]
+      );
 
-    quizResult.rows.forEach(q => {
-      quizMap[q._id] = q;
-    });
-  }
+      quizResult.rows.forEach(q => {
+        quizMap[q._id] = q;
+      });
+    }
 
-  /**
-   * 5️⃣ Inject lesson quiz
-   */
-  const lessonsWithQuiz = lessons.map(lesson => {
-    const quiz = lesson.quizid
-      ? quizMap[lesson.quizid] || null
-      : null;
+    /**
+     * 5️⃣ Inject lesson quiz
+     */
+    const lessonsWithQuiz = lessons.map(lesson => {
+      const quiz = lesson.quizid
+        ? quizMap[lesson.quizid] || null
+        : null;
 
-    return {
-      ...lesson,
-      quiz: quiz
-        ? {
+      return {
+        ...lesson,
+        quiz: quiz
+          ? {
             ...quiz,
             locked: !lesson.is_completed
           }
-        : null
-    };
-  });
+          : null
+      };
+    });
 
-  /**
-   * 6️⃣ FINAL EXAM LOCK
-   */
-  const allLessonsCompleted = lessons.every(l => l.is_completed);
+    /**
+     * 6️⃣ FINAL EXAM LOCK
+     */
+    const allLessonsCompleted = lessons.every(l => l.is_completed);
 
-  const finalQuiz = finalQuizId
-    ? {
+    const finalQuiz = finalQuizId
+      ? {
         ...quizMap[finalQuizId],
         locked: !allLessonsCompleted
       }
-    : null;
+      : null;
 
-  /**
-   * 7️⃣ Final response
-   */
-  return {
-    lessons: lessonsWithQuiz,
-    finalQuiz
-  };
-}
+    /**
+     * 7️⃣ Final response
+     */
+    return {
+      lessons: lessonsWithQuiz,
+      finalQuiz
+    };
+  }
 
 
 };
