@@ -185,7 +185,7 @@ const CourseModel = {
       '_id', l._id,
       'title', l.title,
       'url', l.url
-    ) ORDER BY cl.order
+    ) ORDER BY cl.lesson_order
   ) AS lessons
   FROM course_lessons cl
   JOIN lessons l ON l._id = cl.lesson_id
