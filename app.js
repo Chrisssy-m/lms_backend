@@ -63,7 +63,7 @@ app.use("/api/certificate", certificate);
 
 const client = new SquareClient({
   token: process.env.SQUARE_SECRET_KEY,
-  environment: SquareEnvironment.Sandbox,
+  environment: SquareEnvironment.Production,
 });
 
 
